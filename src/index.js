@@ -1,26 +1,25 @@
-const { matcher } = require('feathers-commons/lib/utils');
-const reactiveResource = require('./resource');
-const reactiveList = require('./list');
-const strategies = require('./strategies');
-const {
-  makeSorter,
-  getParamsPosition
-} = require('./utils');
+import _debug from 'debug';
+import { matcher } from 'feathers-commons/lib/utils';
+import { Observable } from 'rxjs/Observable';
 
-const { Observable } = require('rxjs/Observable');
-require('rxjs/add/observable/fromEvent');
-require('rxjs/add/observable/fromPromise');
-require('rxjs/add/observable/merge');
-require('rxjs/add/operator/concat');
-require('rxjs/add/operator/exhaustMap');
-require('rxjs/add/operator/filter');
-require('rxjs/add/operator/let');
-require('rxjs/add/operator/map');
-require('rxjs/add/operator/mapTo');
-require('rxjs/add/operator/mergeMap');
-require('rxjs/add/operator/scan');
+import 'rxjs/add/observable/fromEvent';
+import 'rxjs/add/observable/fromPromise';
+import 'rxjs/add/observable/merge';
+import 'rxjs/add/operator/concat';
+import 'rxjs/add/operator/exhaustMap';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/let';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/mapTo';
+import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/scan';
 
-const debug = require('debug')('feathers-reactive');
+import reactiveResource from './resource';
+import reactiveList from './list';
+import strategies from './strategies';
+import { makeSorter, getParamsPosition } from './utils';
+
+const debug = _debug('feathers-reactive');
 
 function FeathersRx (options = {}) {
   const listStrategies = strategies();
@@ -96,6 +95,13 @@ function FeathersRx (options = {}) {
     // get the extended service object
     const newService = service.mixin(mixin);
 
+    // workaround for Firefox
+    // FF defines Object.prototype.watch(), so uberproto doesn't recognize the mixin's .watch()
+    // see https://github.com/feathersjs/feathers-reactive/issues/67
+    if (Object.prototype.watch && Object.prototype.watch === newService.watch) {
+      newService.watch = mixin.watch;
+    }
+    
     // bind the new service to all reactive methods
     for (let method in reactiveMethods) {
       reactiveMethods[method] = reactiveMethods[method].bind(newService);
