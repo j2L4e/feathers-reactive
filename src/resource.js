@@ -22,26 +22,28 @@ module.exports = function (settings, method) {
     // create new Observable resource
     const options = getOptions(settings, this._rx, params.rx);
     const source = getSource(this[method].bind(this), arguments);
-    const stream = source.concat(
-      source.exhaustMap(data => {
-        // Filter only data with the same id
-        const filter = current => current[options.idField] === data[options.idField];
-        // `removed` events get special treatment
-        const filteredRemoves = this.removed$.filter(filter);
-        // `created`, `updated` and `patched`
-        const filteredEvents = Observable.merge(
-          this.created$,
-          this.updated$,
-          this.patched$
-        ).filter(filter);
+    const stream = source.concatMap(data => {
+      // Filter only data with the same id
+      const filter = current => current[options.idField] === data[options.idField];
+      // `removed` events get special treatment
+      const filteredRemoves$ = this.removed$.filter(filter);
+      // `created`, `updated` and `patched`
+      const filteredEvents$ = Observable.merge(
+        this.created$,
+        this.updated$,
+        this.patched$
+      ).filter(filter);
 
-        return Observable.merge(
-          // Map to a callback that merges old and new data
-          filteredEvents,
-          // filtered `removed` events always mapped to `null`
-          filteredRemoves.mapTo(null)
-        );
-      }));
+      const combinedEvents$ = Observable.merge(
+        // Map to a callback that merges old and new data
+        filteredEvents$,
+        // filtered `removed` events always mapped to `null`
+        filteredRemoves$.mapTo(null)
+      );
+
+      return Observable.of(data)
+        .concat(combinedEvents$);
+    });
 
     // apply `let` function if set
     const letStream = options.let ? stream.let(options.let) : stream;

@@ -2,17 +2,23 @@ import _debug from 'debug';
 import { matcher } from 'feathers-commons/lib/utils';
 import { Observable } from 'rxjs/Observable';
 
+import 'rxjs/add/observable/defer';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/fromPromise';
 import 'rxjs/add/observable/merge';
+import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/concat';
+import 'rxjs/add/operator/concatMap';
+import 'rxjs/add/operator/concatMapTo';
 import 'rxjs/add/operator/exhaustMap';
 import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/finally';
 import 'rxjs/add/operator/let';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mapTo';
-import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/shareReplay';
+import 'rxjs/add/operator/switchMapTo';
 
 import reactiveResource from './resource';
 import reactiveList from './list';
@@ -101,7 +107,7 @@ function FeathersRx (options = {}) {
     if (Object.prototype.watch && Object.prototype.watch === newService.watch) {
       newService.watch = mixin.watch;
     }
-    
+
     // bind the new service to all reactive methods
     for (let method in reactiveMethods) {
       reactiveMethods[method] = reactiveMethods[method].bind(newService);

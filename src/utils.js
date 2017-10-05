@@ -1,26 +1,15 @@
 import _debug from 'debug';
 import { sorter as createSorter } from 'feathers-commons/lib/utils';
 import { Observable } from 'rxjs/Observable';
+
 import stringify from 'json-stable-stringify';
 
 const debug = _debug('feathers-reactive');
 
 function getSource (originalMethod, args) {
-  let resultPromise = null;
-
-  return Observable.create(observer => {
-    if (!resultPromise) {
-      resultPromise = originalMethod(...args);
-      _assertPromise(resultPromise);
-    }
-
-    resultPromise
-      .then(res => {
-        observer.next(res);
-        observer.complete();
-      })
-      .catch(e => observer.error(e));
-  });
+  return Observable.defer(() =>
+    Observable.fromPromise(originalMethod(...args))
+  );
 }
 
 function makeSorter (query, options) {
@@ -96,16 +85,6 @@ function getParamsPosition (method) {
   };
 
   return (method in paramsPositions) ? paramsPositions[method] : 1;
-}
-
-function _assertPromise (obj) {
-  if (
-    !obj ||
-    typeof obj.then !== 'function' ||
-    typeof obj.catch !== 'function'
-  ) {
-    throw new Error(`feathers-reactive only works with services that return a Promise`);
-  }
 }
 
 function _hash (key) {
